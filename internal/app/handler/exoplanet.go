@@ -13,8 +13,18 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func GetUserID() uint {
-	return uint(1)
+func GetUserID(ctx *gin.Context) uint {
+	value, exists := ctx.Get("userID")
+	if !exists {
+		return 0
+	}
+
+	userID, ok := value.(uint)
+	if !ok {
+		return 0
+	}
+
+	return userID
 }
 
 func isImage(contentType string) bool {
@@ -66,6 +76,16 @@ func validateFileUpload(header *multipart.FileHeader, check func(string) bool) (
 	return 0, nil
 }
 
+// GetExoplanets godoc
+//
+//	@Summary		Получить список экзопланет
+//	@Description	Возвращает опубликованные экзопланеты с количеством лайков и признаком владельца.
+//	@Tags			Exoplanets
+//	@Produce		json
+//	@Param			query	query		string	false	"Фильтр по массе, например 7.5"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Router			/api/Exoplanets [get]
 func (h *Handler) GetExoplanets(ctx *gin.Context) {
 	var exoplanets []ds.Exoplanet
 	var err error
@@ -94,7 +114,7 @@ func (h *Handler) GetExoplanets(ctx *gin.Context) {
 		}
 	}
 
-	userId := GetUserID()
+	userId := GetUserID(ctx)
 
 	type ExtendedExoplanet struct {
 		ds.Exoplanet
@@ -111,7 +131,7 @@ func (h *Handler) GetExoplanets(ctx *gin.Context) {
 			return
 		}
 
-		isMine := exoplanet.CreatorID == userId
+		isMine := userId != 0 && exoplanet.CreatorID == userId
 
 		extendedExoplanet := ExtendedExoplanet{
 			Exoplanet:   exoplanet,
@@ -128,6 +148,18 @@ func (h *Handler) GetExoplanets(ctx *gin.Context) {
 	})
 }
 
+// GetExoplanet godoc
+//
+//	@Summary		Получить экзопланету
+//	@Description	Возвращает опубликованную экзопланету по ID.
+//	@Tags			Exoplanets
+//	@Produce		json
+//	@Param			id		path		int		true	"ID экзопланеты"
+//	@Param			next	query		boolean	false	"Перейти к следующей записи"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		404		{object}	map[string]interface{}
+//	@Router			/api/Exoplanets/{id} [get]
 func (h *Handler) GetExoplanet(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -161,12 +193,18 @@ func (h *Handler) GetExoplanet(ctx *gin.Context) {
 		return
 	}
 
-	userID := GetUserID()
-	isLiked, err := h.Repository.IsLikedByUser(exoplanet.ID, int(userID))
+	userID := GetUserID(ctx)
+	isLiked := false
 
-	if err != nil {
-		h.errorHandler(ctx, http.StatusInternalServerError, err)
-		return
+	if userID != 0 {
+		isLiked, err = h.Repository.IsLikedByUser(
+			exoplanet.ID,
+			int(userID),
+		)
+		if err != nil {
+			h.errorHandler(ctx, http.StatusInternalServerError, err)
+			return
+		}
 	}
 
 	type ExtendedExoplanet struct {
@@ -186,8 +224,18 @@ func (h *Handler) GetExoplanet(ctx *gin.Context) {
 	})
 }
 
+// GetDraftExoplanet godoc
+//
+//	@Summary		Получить черновик
+//	@Description	Возвращает черновик текущего пользователя.
+//	@Tags			Exoplanets
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Success		200	{object}	map[string]interface{}
+//	@Failure		401	{object}	map[string]interface{}
+//	@Router			/api/DraftExoplanets [get]
 func (h *Handler) GetDraftExoplanet(ctx *gin.Context) {
-	creatorID := GetUserID()
+	creatorID := GetUserID(ctx)
 
 	draftExoplanet, err := h.Repository.GetDraftExoplanet(creatorID)
 
@@ -201,6 +249,21 @@ func (h *Handler) GetDraftExoplanet(ctx *gin.Context) {
 	})
 }
 
+// AddDraftExoplanet godoc
+//
+//	@Summary		Создать черновик
+//	@Description	Создаёт черновик экзопланеты и при необходимости загружает изображение и видео.
+//	@Tags			Exoplanets
+//	@Security		BearerAuth
+//	@Accept			mpfd
+//	@Produce		json
+//	@Param			title	formData	string	false	"Название экзопланеты"
+//	@Param			image	formData	file	false	"Изображение"
+//	@Param			video	formData	file	false	"Видео"
+//	@Success		201		{object}	map[string]interface{}
+//	@Failure		400		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Router			/api/AddExoplanets [post]
 func (h *Handler) AddDraftExoplanet(ctx *gin.Context) {
 	err := ctx.Request.ParseMultipartForm(2 << 20)
 
@@ -246,7 +309,7 @@ func (h *Handler) AddDraftExoplanet(ctx *gin.Context) {
 		}
 	}
 
-	creatorID := GetUserID()
+	creatorID := GetUserID(ctx)
 
 	draftExoplanet := ds.Exoplanet{
 		Title:     ctx.Request.FormValue("title"),
@@ -292,8 +355,23 @@ type PublishExoplanetRequest struct {
 	Description string  `json:"description"`
 }
 
+// PublishExoplanet godoc
+//
+//	@Summary		Опубликовать черновик
+//	@Description	Обновляет поля экзопланеты и переводит черновик в статус published.
+//	@Tags			Exoplanets
+//	@Security		BearerAuth
+//	@Accept			mpfd
+//	@Produce		json
+//	@Param			distance	formData	integer	false	"Расстояние"
+//	@Param			weight		formData	number	false	"Масса"
+//	@Param			description	formData	string	false	"Описание"
+//	@Success		200			{object}	map[string]interface{}
+//	@Failure		401			{object}	map[string]interface{}
+//	@Failure		404			{object}	map[string]interface{}
+//	@Router			/api/PublishExoplanets [put]
 func (h *Handler) PublishExoplanet(ctx *gin.Context) {
-	creatorID := GetUserID()
+	creatorID := GetUserID(ctx)
 	exoplanet, err := h.Repository.GetDraftExoplanet(creatorID)
 
 	if err != nil {
@@ -342,6 +420,18 @@ func (h *Handler) PublishExoplanet(ctx *gin.Context) {
 	})
 }
 
+// DeleteExoplanet godoc
+//
+//	@Summary		Удалить экзопланету
+//	@Description	Выполняет мягкое удаление опубликованной записи владельцем.
+//	@Tags			Exoplanets
+//	@Security		BearerAuth
+//	@Produce		json
+//	@Param			id	path		int	true	"ID экзопланеты"
+//	@Success		200	{object}	map[string]interface{}
+//	@Failure		401	{object}	map[string]interface{}
+//	@Failure		403	{object}	map[string]interface{}
+//	@Router			/api/DeleteExoplanets/{id} [delete]
 func (h *Handler) DeleteExoplanet(ctx *gin.Context) {
 	idString := ctx.Param("id")
 	id, err := strconv.Atoi(idString)
@@ -358,7 +448,7 @@ func (h *Handler) DeleteExoplanet(ctx *gin.Context) {
 		return
 	}
 
-	userID := GetUserID()
+	userID := GetUserID(ctx)
 
 	if Exoplanet.CreatorID != userID {
 		ctx.JSON(http.StatusForbidden, gin.H{
@@ -383,8 +473,22 @@ type LikeRequest struct {
 	Like bool `json:"like"`
 }
 
+// LikeExoplanet godoc
+//
+//	@Summary		Поставить или снять лайк
+//	@Description	Принимает JSON с полем like: true или like: false.
+//	@Tags			Exoplanets
+//	@Security		BearerAuth
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path		int				true	"ID экзопланеты"
+//	@Param			body	body		map[string]bool	true	"Например: {\"like\": true}"
+//	@Success		200		{object}	map[string]interface{}
+//	@Success		201		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Router			/api/LikeExoplanets/{id}/like [post]
 func (h *Handler) LikeExoplanet(ctx *gin.Context) {
-	userID := GetUserID()
+	userID := GetUserID(ctx)
 
 	exoplanetIdString := ctx.Param("id")
 	exoplanetID, err := strconv.Atoi(exoplanetIdString)

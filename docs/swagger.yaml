@@ -1,0 +1,355 @@
+basePath: /
+info:
+  contact: {}
+  description: |-
+    API для управления экзопланетами.
+    Публичное чтение доступно без авторизации.
+    Для создания, публикации и лайков необходим JWT.
+  title: Exoplanets API
+  version: "1.0"
+paths:
+  /api/AddExoplanets:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Создаёт черновик экзопланеты и при необходимости загружает изображение
+        и видео.
+      parameters:
+      - description: Название экзопланеты
+        in: formData
+        name: title
+        type: string
+      - description: Изображение
+        in: formData
+        name: image
+        type: file
+      - description: Видео
+        in: formData
+        name: video
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Создать черновик
+      tags:
+      - Exoplanets
+  /api/DeleteExoplanets/{id}:
+    delete:
+      description: Выполняет мягкое удаление опубликованной записи владельцем.
+      parameters:
+      - description: ID экзопланеты
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удалить экзопланету
+      tags:
+      - Exoplanets
+  /api/DraftExoplanets:
+    get:
+      description: Возвращает черновик текущего пользователя.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получить черновик
+      tags:
+      - Exoplanets
+  /api/Exoplanets:
+    get:
+      description: Возвращает опубликованные экзопланеты с количеством лайков и признаком
+        владельца.
+      parameters:
+      - description: Фильтр по массе, например 7.5
+        in: query
+        name: query
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Получить список экзопланет
+      tags:
+      - Exoplanets
+  /api/Exoplanets/{id}:
+    get:
+      description: Возвращает опубликованную экзопланету по ID.
+      parameters:
+      - description: ID экзопланеты
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Перейти к следующей записи
+        in: query
+        name: next
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Получить экзопланету
+      tags:
+      - Exoplanets
+  /api/LikeExoplanets/{id}/like:
+    post:
+      consumes:
+      - application/json
+      description: 'Принимает JSON с полем like: true или like: false.'
+      parameters:
+      - description: ID экзопланеты
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 'Например: {\'
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties:
+            type: boolean
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Поставить или снять лайк
+      tags:
+      - Exoplanets
+  /api/PublishExoplanets:
+    put:
+      consumes:
+      - multipart/form-data
+      description: Обновляет поля экзопланеты и переводит черновик в статус published.
+      parameters:
+      - description: Расстояние
+        in: formData
+        name: distance
+        type: integer
+      - description: Масса
+        in: formData
+        name: weight
+        type: number
+      - description: Описание
+        in: formData
+        name: description
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Опубликовать черновик
+      tags:
+      - Exoplanets
+  /api/SignIn:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Проверяет логин и пароль и возвращает JWT.
+      parameters:
+      - description: Логин
+        in: formData
+        name: login
+        required: true
+        type: string
+      - description: Пароль
+        in: formData
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Вход пользователя
+      tags:
+      - Auth
+  /api/SignOut:
+    post:
+      description: Отзывает JWT через Redis blacklist.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Выход пользователя
+      tags:
+      - Auth
+  /api/SignUp:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Создаёт нового пользователя и сохраняет хеш пароля.
+      parameters:
+      - description: Логин
+        in: formData
+        name: login
+        required: true
+        type: string
+      - description: Пароль
+        in: formData
+        name: password
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Регистрация пользователя
+      tags:
+      - Auth
+schemes:
+- http
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
