@@ -33,7 +33,7 @@
 **Скриншоты:**
 
 - Визуальный вид проекта:
-  <!-- ![Визуальный вид проекта](screenshots/design.png) -->
+  ![Визуальный вид проекта](screenshots/design.png)
 
 [Перейти к ветке SSR](https://github.com/a-feel-u/Exoplanets_backend/tree/SSR)
 
@@ -46,7 +46,7 @@
 **Скриншоты:**
 
 - ER диаграмма:
-  <!-- ![Диаграммы](screenshots/er_diagrams.png) -->
+  ![Диаграммы](screenshots/er_diagrams.png)
 
 [Перейти к ветке MakingDB](https://github.com/a-feel-u/Exoplanets_backend/tree/MakingDB)
 
@@ -60,10 +60,10 @@
 **Скриншоты:**
 
 - Диаграмма классов бэкенда:
-  <!-- ![Диаграммы взаимодействия](screenshots/class_diagrams.png) -->
+  ![Диаграммы взаимодействия](screenshots/class_diagrams.png)
 
 - Примеры работы методов:
-  <!-- ![Работа методов](screenshots/methods.png) -->
+  ![Работа методов](screenshots/methods.png)
 
 [Перейти к ветке WebService](https://github.com/a-feel-u/Exoplanets_backend/tree/WebService)
 
@@ -84,13 +84,13 @@
 **Скриншоты:**
 
 - Диаграмма последовательности:
-  <!-- ![Диаграммы](screenshots/p_diagrams.png) -->
+  ![Диаграммы](screenshots/p_diagrams.png)
 
 - Swagger UI:
-  <!-- ![Swagger UI](screenshots/swagger.png) -->
+  ![Swagger UI](screenshots/swagger.png)
 
 - Примеры авторизации и проверки доступа:
-  <!-- ![Авторизация](screenshots/auth.png) -->
+  ![Авторизация](screenshots/auth.png)
 
 [Перейти к ветке JWT](https://github.com/a-feel-u/Exoplanets_backend/tree/JWT)
 
