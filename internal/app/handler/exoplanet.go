@@ -351,7 +351,7 @@ func (h *Handler) AddDraftExoplanet(ctx *gin.Context) {
 type PublishExoplanetRequest struct {
 	Title       string  `json:"title"`
 	Distance    float64 `json:"distance"`
-	Temperature float64 `json:"temperature"`
+	Weight      float64 `json:"weight"`
 	Description string  `json:"description"`
 }
 
